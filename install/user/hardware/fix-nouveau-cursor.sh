@@ -5,19 +5,15 @@
 # Skip the fix when the proprietary driver was configured: supported GPUs can
 # still use nouveau during installation before switching drivers on reboot.
 #
-# Detection must not rely only on `lspci -k`: during install/chroot, lspci often
-# cannot load libkmod ("Unable to load libkmod resources") and silently omits
-# "Kernel driver in use", so the old check no-oped on first boot for outdated
-# NVIDIA hardware — a show-stopper when trying Omarchy.
+# Nouveau need not be bound while installing (an ISO booted with nomodeset or
+# nouveau blacklisted), so fall back to the GPU itself when no driver is in use.
 nvidia_config="${OMARCHY_NVIDIA_MODPROBE_CONFIG:-/etc/modprobe.d/nvidia.conf}"
-omarchy_path="${OMARCHY_PATH:-/usr/share/omarchy}"
 
 using_or_stuck_on_nouveau() {
   # Already bound in this boot (live ISO / first session).
   [[ -d /sys/module/nouveau ]] && return 0
   lsmod 2>/dev/null | awk '{ print $1 }' | grep -qx nouveau && return 0
 
-  # Prefer lspci -k when libkmod works.
   if omarchy-cmd-present lspci &&
     LC_ALL=C lspci -k 2>/dev/null | grep -qi 'Kernel driver in use: nouveau'; then
     return 0
@@ -41,8 +37,8 @@ if [[ ! -f $nvidia_config ]] && using_or_stuck_on_nouveau; then
   # hyprland.lua always require()'s hypr.looknfeel. Seed the packaged stub if
   # user finalization ran before configs were copied, or the file was removed.
   if [[ ! -f $looknfeel ]]; then
-    if [[ -f $omarchy_path/config/hypr/looknfeel.lua ]]; then
-      cp "$omarchy_path/config/hypr/looknfeel.lua" "$looknfeel"
+    if [[ -f $OMARCHY_PATH/config/hypr/looknfeel.lua ]]; then
+      cp "$OMARCHY_PATH/config/hypr/looknfeel.lua" "$looknfeel"
     else
       printf '%s\n' "-- User look and feel overrides." >"$looknfeel"
     fi

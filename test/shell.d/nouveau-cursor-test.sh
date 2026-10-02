@@ -11,16 +11,10 @@ mkdir -p "$test_tmp/bin" "$test_tmp/home/.config/hypr" "$test_tmp/omarchy/config
 # Packaged stub used when seeding a missing looknfeel.
 printf '%s\n' '-- Packaged looknfeel stub' >"$test_tmp/omarchy/config/hypr/looknfeel.lua"
 
-# Default fake lspci: -k is blind (install/chroot libkmod failure), plain lspci
-# still reports an NVIDIA VGA device.
+# Default fake lspci: an NVIDIA VGA device with no driver bound, as when the
+# installer booted with nouveau disabled.
 cat >"$test_tmp/bin/lspci" <<'SH'
 #!/bin/bash
-if [[ ${1:-} == -k ]]; then
-  # Simulate install-time libkmod failure: no "Kernel driver in use" lines.
-  printf '%s\n' "03:00.0 VGA compatible controller: NVIDIA Corporation C79 [GeForce 9400M] (rev b1)" >&2
-  echo "lspci: Unable to load libkmod resources: error -2" >&2
-  exit 0
-fi
 printf '%s\n' "03:00.0 VGA compatible controller: NVIDIA Corporation C79 [GeForce 9400M] (rev b1)"
 SH
 chmod +x "$test_tmp/bin/lspci"
@@ -36,9 +30,7 @@ looknfeel="$test_tmp/home/.config/hypr/looknfeel.lua"
 printf '%s\n' '-- User look and feel' >"$looknfeel"
 
 run_fix() {
-  # Optionally shadow /sys/module/nouveau by not creating it under a fake root;
-  # the script checks the real /sys/module/nouveau. Skip that path by relying on
-  # machines/CI without nouveau loaded, and cover it separately if present.
+  # The script also reads the real /sys/module/nouveau, so run this where nouveau is not loaded.
   HOME="$test_tmp/home" \
     PATH="$test_tmp/bin:$ROOT/bin:$PATH" \
     OMARCHY_PATH="$test_tmp/omarchy" \
@@ -48,7 +40,7 @@ run_fix() {
 
 run_fix >/dev/null
 grep -F 'no_hardware_cursors = true' "$looknfeel" >/dev/null
-pass "nouveau hardware setup enables software cursors when lspci -k is blind"
+pass "nouveau hardware setup enables software cursors when no driver is bound"
 
 run_fix >/dev/null
 (( $(grep -c 'no_hardware_cursors = true' "$looknfeel") == 1 )) || fail "nouveau cursor setup is idempotent"
