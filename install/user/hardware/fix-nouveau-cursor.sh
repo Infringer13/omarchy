@@ -8,10 +8,11 @@
 # Nouveau need not be bound while installing (an ISO booted with nomodeset or
 # nouveau blacklisted), so fall back to the GPU itself when no driver is in use.
 nvidia_config="${OMARCHY_NVIDIA_MODPROBE_CONFIG:-/etc/modprobe.d/nvidia.conf}"
+nouveau_module="${OMARCHY_NOUVEAU_MODULE_PATH:-/sys/module/nouveau}"
 
 using_or_stuck_on_nouveau() {
   # Already bound in this boot (live ISO / first session).
-  [[ -d /sys/module/nouveau ]] && return 0
+  [[ -d $nouveau_module ]] && return 0
   lsmod 2>/dev/null | awk '{ print $1 }' | grep -qx nouveau && return 0
 
   if omarchy-cmd-present lspci &&

@@ -30,11 +30,11 @@ looknfeel="$test_tmp/home/.config/hypr/looknfeel.lua"
 printf '%s\n' '-- User look and feel' >"$looknfeel"
 
 run_fix() {
-  # The script also reads the real /sys/module/nouveau, so run this where nouveau is not loaded.
   HOME="$test_tmp/home" \
     PATH="$test_tmp/bin:$ROOT/bin:$PATH" \
     OMARCHY_PATH="$test_tmp/omarchy" \
     OMARCHY_NVIDIA_MODPROBE_CONFIG="$test_tmp/nvidia.conf" \
+    OMARCHY_NOUVEAU_MODULE_PATH="$test_tmp/no-nouveau-module" \
     bash -euo pipefail -c 'source "$ROOT/install/user/hardware/fix-nouveau-cursor.sh"'
 }
 
