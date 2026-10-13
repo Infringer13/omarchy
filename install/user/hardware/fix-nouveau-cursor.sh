@@ -9,6 +9,7 @@
 # nouveau blacklisted), so fall back to the GPU itself when no driver is in use.
 nvidia_config="${OMARCHY_NVIDIA_MODPROBE_CONFIG:-/etc/modprobe.d/nvidia.conf}"
 nouveau_module="${OMARCHY_NOUVEAU_MODULE_PATH:-/sys/module/nouveau}"
+nvidia_module="${OMARCHY_NVIDIA_MODULE_PATH:-/sys/module/nvidia}"
 
 using_or_stuck_on_nouveau() {
   # Already bound in this boot (live ISO / first session).
@@ -22,7 +23,10 @@ using_or_stuck_on_nouveau() {
 
   # Install-time fallback: nvidia.sh already ran and only writes nvidia.conf when
   # a proprietary driver will take over. An NVIDIA display device with no
-  # nvidia.conf means this GPU stays on nouveau after reboot.
+  # nvidia.conf means this GPU stays on nouveau after reboot, unless a
+  # proprietary driver the user installed themselves is already loaded.
+  [[ -d $nvidia_module ]] && return 1
+
   if omarchy-cmd-present lspci &&
     LC_ALL=C lspci 2>/dev/null | grep -qiE 'VGA compatible controller: NVIDIA|3D controller: NVIDIA'; then
     return 0

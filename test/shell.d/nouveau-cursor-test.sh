@@ -35,6 +35,7 @@ run_fix() {
     OMARCHY_PATH="$test_tmp/omarchy" \
     OMARCHY_NVIDIA_MODPROBE_CONFIG="$test_tmp/nvidia.conf" \
     OMARCHY_NOUVEAU_MODULE_PATH="$test_tmp/no-nouveau-module" \
+    OMARCHY_NVIDIA_MODULE_PATH="$test_tmp/nvidia-module" \
     bash -euo pipefail -c 'source "$ROOT/install/user/hardware/fix-nouveau-cursor.sh"'
 }
 
@@ -85,6 +86,16 @@ if grep -q 'no_hardware_cursors' "$looknfeel"; then
   fail "nouveau cursor setup skips proprietary NVIDIA installs"
 fi
 pass "nouveau cursor setup skips proprietary NVIDIA installs"
+
+# Proprietary driver loaded without nvidia.conf, as when the user installed it.
+rm -f "$test_tmp/nvidia.conf"
+mkdir "$test_tmp/nvidia-module"
+run_fix >/dev/null
+if grep -q 'no_hardware_cursors' "$looknfeel"; then
+  fail "nouveau cursor setup skips a loaded proprietary driver"
+fi
+pass "nouveau cursor setup skips a loaded proprietary driver"
+rmdir "$test_tmp/nvidia-module"
 
 # Classic happy path: lspci -k reports nouveau.
 rm -f "$test_tmp/nvidia.conf"
